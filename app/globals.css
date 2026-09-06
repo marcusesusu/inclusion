@@ -1,26 +1,62 @@
 @import "tailwindcss";
 
+/* Define the base colors and font variables */
 :root {
+  /* Font Variables tied to next/font loader */
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains-mono), ui-monospace, SFMono-Regular, monospace;
+
+  /* Logo Palette derived variables */
+  --primary: #41b8d2;       /* The main logo teal */
+  --primary-hover: #36a2b8; /* Slightly darker teal */
+  --secondary: #e15a51;     /* The red/orange */
+  --tertiary: #22a65a;      /* The validation green */
+
+  /* Light Theme (Default) */
   --background: #ffffff;
   --foreground: #171717;
+  --muted: #f4f4f5;
+  --muted-foreground: #71717a;
+  --border: #e4e4e7;
 }
 
+/* Use the `.dark` class to activate dark mode styles */
+.dark {
+  /* Dark Theme */
+  --background: #0a0a0a;
+  --foreground: #ededed;
+  --muted: #27272a;
+  --muted-foreground: #a1a1aa;
+  --border: #3f3f46;
+
+  /* Potentially shift palette slightly for contrast in dark mode */
+  --primary: #4cc8e3; /* Slightly brighter teal for dark bg */
+}
+
+/* Configure Tailwind v4 inline theme extension */
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+
+  /* The Logo Palette */
+  --color-primary: var(--primary);
+  --color-primary-foreground: #ffffff;
+  --color-secondary: var(--secondary);
+  --color-tertiary: var(--tertiary);
+
+  /* Font mappings for Tailwind */
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
+/* Default Body Styling */
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11"; /* Enables Inter's disambiguation glyphs (e.g. distinct 1, l, I, 0) */
+  antialiased: true;
 }
