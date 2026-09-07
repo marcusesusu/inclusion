@@ -42,11 +42,17 @@ export const resetPasswordSchema = z
     path: ['confirm_password'],
   });
 
+
 export const otpVerifySchema = z.object({
   otp: z.string().length(6, 'Verification code must be exactly 6 digits'),
+});
+
+export const twoFactorCodeSchema = z.object({
+  code: z.string().min(6, 'Enter a valid 6-digit or backup code'),
 });
 
 export type LoginInput = z.infer<typeof loginSchema>;
 export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
 export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
 export type OtpVerifyInput = z.infer<typeof otpVerifySchema>;
+export type TwoFactorCodeInput = z.infer<typeof twoFactorCodeSchema>;

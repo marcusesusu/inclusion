@@ -1,14 +1,14 @@
 export interface LoginResponse {
   access_token?: string;
+  token_type?: string;
   requires_2fa?: boolean;
-  '2fa_status'?: 'SETUP_REQUIRED' | 'VERIFICATION_REQUIRED';
+  '2fa_status'?: 'VERIFICATION_REQUIRED' | 'SETUP_REQUIRED';
+  next_screen?: string;
   default_method?: 'totp' | 'email' | 'sms';
-  email_unverified?: boolean;
-  user?: {
-    id: string;
-    email: string;
-    name: string;
-  };
+  masked_target?: string;
+  available_methods?: string[];
+  message?: string;
+  user?: Record<string, unknown>;
 }
 
 export interface ApiErrorResponse {
@@ -88,4 +88,16 @@ export interface BranchRef {
   id: number;
   name: string;
   cooperative_id: number;
+}
+
+
+export interface Setup2FAResponse {
+  secret: string;
+  qr_code_base64: string;
+  totp_uri: string;
+}
+
+export interface Enable2FAResponse {
+  message: string;
+  backup_codes: string[];
 }

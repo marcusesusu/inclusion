@@ -5,11 +5,12 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Loader2, ArrowRight } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { AxiosError } from 'axios';
 
 import { loginSchema, LoginInput } from '@/lib/validations/auth';
 import { FormInput } from '@/components/ui/form-input';
+import { FormButton } from '@/components/ui/form-button';
 import { authApi } from '@/lib/auth';
 import { ApiErrorResponse } from '@/types/auth';
 import { AuthLayout } from '@/components/auth/auth-layout';
@@ -29,6 +30,9 @@ export default function LoginPage() {
     setIsSubmitting(true);
     try {
       const resData = await authApi.login(data);
+      if (resData.access_token) {
+        localStorage.setItem('access_token', resData.access_token);
+      }
       if (resData.requires_2fa) {
         if (resData['2fa_status'] === 'SETUP_REQUIRED') {
           router.push('/auth/2fa/setup');
@@ -74,13 +78,9 @@ export default function LoginPage() {
               </Link>
             </div>
           </div>
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-white transition-all hover:opacity-90 disabled:opacity-50"
-          >
-            {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <>Sign In <ArrowRight className="h-4 w-4" /></>}
-          </button>
+          <FormButton isLoading={isSubmitting} icon={<ArrowRight className="h-4 w-4" />}>
+            Sign In
+          </FormButton>
         </form>
       </FormProvider>
     </AuthLayout>
