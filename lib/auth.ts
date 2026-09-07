@@ -1,4 +1,4 @@
-import { Enable2FAResponse, LoginResponse, Setup2FAResponse } from '@/types/auth';
+import { Enable2FAResponse, LoginResponse, Setup2FAResponse, User } from '@/types/auth';
 import { apiClient } from './axios';
 import { ForgotPasswordInput, LoginInput, OtpVerifyInput, ResetPasswordInput } from './validations/auth';
 
@@ -43,17 +43,17 @@ export const authApi = {
     return data;
   },
 
-  send2FAOtp: async (payload: {
+   send2FAOtp: async (payload: {
     method: 'email' | 'sms';
-    email?: string;
-    phone_number?: string;
   }): Promise<{ message: string; masked_target: string }> => {
-    const { data } = await apiClient.post('/auth/twofa/send-otp', payload);
+    const { data } = await apiClient.post('/auth/2fa/send-otp', payload);
     return data;
   },
 
-
-  verify2FALogin: async (payload: { code: string; method: string }): Promise<{ access_token: string }> => {
+  verify2FALogin: async (payload: {
+    code: string;
+    method: string;
+  }): Promise<{ access_token: string; token_type?: string; user?: User }> => {
     const { data } = await apiClient.post('/auth/twofa/verify-login', payload);
     return data;
   },
