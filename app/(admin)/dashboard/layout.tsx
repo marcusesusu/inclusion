@@ -65,12 +65,14 @@ export default function DashboardLayout({
     const resolvedFirstName = parsedUser?.first_name || "User";
     const resolvedLastName = parsedUser?.last_name || "";
     const resolvedId = parsedUser?.id || 0;
+    const resolvedPin = parsedUser?.has_transaction_pin || false;
 
     setUser({
       id: resolvedId,
       first_name: resolvedFirstName,
       last_name: resolvedLastName,
       role: resolvedRole as UserSession["role"],
+      has_transaction_pin:resolvedPin,
     });
   }, []);
 
@@ -122,11 +124,11 @@ export default function DashboardLayout({
           >
             <div className="flex items-center gap-2">
               <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary font-bold text-primary-foreground">
-                E
+                ID
               </div>
               {(!isCollapsed || isMobileOpen) && (
                 <span className="font-semibold text-base truncate">
-                  Esusu Admin
+                  Inclusion ID Admin
                 </span>
               )}
             </div>
@@ -252,7 +254,7 @@ export default function DashboardLayout({
           </button>
 
           <div className="text-xs font-medium text-muted-foreground">
-            Esusu Operations Portal
+            Inclusion Verification Portal
           </div>
         </header>
 

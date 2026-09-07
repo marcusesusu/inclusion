@@ -72,12 +72,10 @@ export interface User {
   created_at: string;
   updated_at: string;
 
-  // Nested Relation Types (Optional/Lazy-loaded fields)
   cooperative?: CooperativeRef | null;
   branch?: BranchRef | null;
 }
 
-/** Lightweight nested entity interfaces to avoid circular dependencies */
 export interface CooperativeRef {
   id: number;
   name: string;
@@ -109,4 +107,6 @@ export interface UserSession {
   first_name: string;
   last_name: string;
   role: Role;
+  has_transaction_pin: boolean;
+  [key: string]: any;
 }

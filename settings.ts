@@ -1,4 +1,4 @@
-import { LayoutDashboard, Settings, type LucideIcon } from "lucide-react";
+import { CircleDollarSign, LayoutDashboard, Settings, ShieldAlertIcon, Users, type LucideIcon } from "lucide-react";
 import { Role } from "./types/auth";
 
 export const SLIDES = [
@@ -28,6 +28,24 @@ export const NAV_ITEMS: NavItem[] = [
     href: "/dashboard",
     icon: LayoutDashboard,
     allowedRoles: ["superadmin", "admin", "staff"],
+  },
+  {
+    label: "Verifications",
+    href: "/dashboard/verifications",
+    icon: ShieldAlertIcon,
+    allowedRoles: ["superadmin", "admin"],
+  },
+  {
+    label: "Teams",
+    href: "/dashboard/team",
+    icon: Users,
+    allowedRoles: ["superadmin", "admin"],
+  },
+  {
+    label: "Wallets",
+    href: "/dashboard/wallets",
+    icon: CircleDollarSign,
+    allowedRoles: ["superadmin", "admin"],
   },
   {
     label: "Settings",

@@ -28,7 +28,7 @@ const siteConfig = {
 export const metadata: Metadata = {
   metadataBase: new URL(siteConfig.url),
   title: {
-    default: 'inclusion.id :: Secure Identity Verification & KYC Platform',
+    default: 'Inclusion.id :: Secure Identity Verification & KYC Platform',
     template: '%s | inclusion.id',
   },
   description: siteConfig.description,

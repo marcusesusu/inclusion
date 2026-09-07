@@ -46,7 +46,7 @@ export const authApi = {
    send2FAOtp: async (payload: {
     method: 'email' | 'sms';
   }): Promise<{ message: string; masked_target: string }> => {
-    const { data } = await apiClient.post('/auth/2fa/send-otp', payload);
+    const { data } = await apiClient.post('/auth/twofa/send-otp', payload);
     return data;
   },
 
