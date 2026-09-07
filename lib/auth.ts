@@ -48,7 +48,7 @@ export const authApi = {
     email?: string;
     phone_number?: string;
   }): Promise<{ message: string; masked_target: string }> => {
-    const { data } = await apiClient.post('/auth/resend-otp', payload);
+    const { data } = await apiClient.post('/auth/twofa/send-otp', payload);
     return data;
   },
 
