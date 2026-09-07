@@ -101,3 +101,12 @@ export interface Enable2FAResponse {
   message: string;
   backup_codes: string[];
 }
+export type Role = "superadmin" | "admin" | "staff" | string;
+
+
+export interface UserSession {
+  id: number;
+  first_name: string;
+  last_name: string;
+  role: Role;
+}
