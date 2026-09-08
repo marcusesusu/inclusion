@@ -1,5 +1,5 @@
 {
-  "name": "verify_app",
+  "name": "inclusion",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -36,5 +36,5 @@
     "tailwindcss": "^4",
     "typescript": "^5"
   },
-  "packageManager": "pnpm@11.12.0"
+  "packageManager": "pnpm@12.3.4"
 }
