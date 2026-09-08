@@ -17,11 +17,20 @@ export type VerificationType =
   | 'bank_account'
   | 'bvn_account_match';
 
-export interface BaseKYCResponse<T = Record<string, any>> {
+export interface BaseKYCResponse {
   status: boolean;
-  message?: string;
-  data?: T;
-  detail?: any;
+  message: string;
+  verification_type?: string;
+  data: {
+    bvn?: string;
+    first_name?: string;
+    middle_name?: string;
+    last_name?: string;
+    date_of_birth?: string;
+    phone_number?: string;
+    raw_response?: Record<string, any>;
+    [key: string]: any;
+  };
 }
 
 export interface VerificationLogItem {

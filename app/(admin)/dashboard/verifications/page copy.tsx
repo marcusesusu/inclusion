@@ -21,8 +21,6 @@ import {
   Eye,
   Camera,
   Info,
-  Printer,
-  Download,
 } from "lucide-react";
 
 import toast from "react-hot-toast";
@@ -34,7 +32,7 @@ import { DataTable, Column } from "@/components/ui/data-table";
 import { verificationApi } from "@/lib/verification";
 import { VerificationLogItem, BaseKYCResponse } from "@/types/verification";
 
-// Schemas
+// Validation Schemas
 const bvnSchema = z.object({
   bvn: z.string().length(11, "BVN must be 11 digits"),
 });
@@ -42,6 +40,7 @@ const bvnFaceSchema = z.object({
   bvn: z.string().length(11, "BVN must be 11 digits"),
   image_base64: z.string().min(10, "Base64 image is required"),
 });
+
 const ninSchema = z.object({
   nin: z.string().length(11, "NIN must be 11 digits"),
   date_of_birth: z.string().optional(),
@@ -50,6 +49,7 @@ const ninFaceSchema = z.object({
   nin: z.string().length(11, "NIN must be 11 digits"),
   image_base64: z.string().min(10, "Base64 image is required"),
 });
+
 const phoneSchema = z.object({
   phone_number: z.string().min(10, "Valid phone number is required"),
 });
@@ -62,6 +62,7 @@ const bvnAccountMatchSchema = z.object({
   account_number: z.string().length(10, "Account number must be 10 digits"),
   bank_code: z.string().min(3, "Bank code is required"),
 });
+
 const passportSchema = z.object({
   passport_number: z.string().min(6, "Passport number is required"),
   first_name: z.string().min(1, "First name is required"),
@@ -130,13 +131,11 @@ export default function IdentityVerificationPage() {
   const limit = 10;
   const [isLoadingLogs, setIsLoadingLogs] = React.useState(true);
 
-  // Temporary In-Memory Result Storage
+  // Result Detail Modal State
   const [resultModalData, setResultModalData] =
     React.useState<BaseKYCResponse | null>(null);
   const [viewLogDetail, setViewLogDetail] =
     React.useState<VerificationLogItem | null>(null);
-
-  const printRef = React.useRef<HTMLDivElement>(null);
 
   const fetchLogs = React.useCallback(async () => {
     setIsLoadingLogs(true);
@@ -155,7 +154,7 @@ export default function IdentityVerificationPage() {
     fetchLogs();
   }, [fetchLogs]);
 
-  // Forms
+  // Forms Setup
   const bvnForm = useForm({
     resolver: zodResolver(bvnSchema),
     defaultValues: { bvn: "" },
@@ -168,6 +167,7 @@ export default function IdentityVerificationPage() {
     resolver: zodResolver(bvnFaceSchema),
     defaultValues: { bvn: "", image_base64: "" },
   });
+
   const ninForm = useForm({
     resolver: zodResolver(ninSchema),
     defaultValues: { nin: "", date_of_birth: "" },
@@ -180,6 +180,7 @@ export default function IdentityVerificationPage() {
     resolver: zodResolver(ninFaceSchema),
     defaultValues: { nin: "", image_base64: "" },
   });
+
   const phoneForm = useForm({
     resolver: zodResolver(phoneSchema),
     defaultValues: { phone_number: "" },
@@ -192,6 +193,7 @@ export default function IdentityVerificationPage() {
     resolver: zodResolver(bvnAccountMatchSchema),
     defaultValues: { bvn: "", account_number: "", bank_code: "" },
   });
+
   const passportForm = useForm({
     resolver: zodResolver(passportSchema),
     defaultValues: {
@@ -217,6 +219,7 @@ export default function IdentityVerificationPage() {
     resolver: zodResolver(utilityBillSchema),
     defaultValues: { customer_id: "", provider: "" },
   });
+
   const cacForm = useForm({
     resolver: zodResolver(cacSchema),
     defaultValues: { rc_number: "", company_type: "" },
@@ -241,10 +244,6 @@ export default function IdentityVerificationPage() {
     } catch (err: any) {
       toast.error(err?.response?.data?.detail || fallbackMsg);
     }
-  };
-
-  const handlePrint = () => {
-    window.print();
   };
 
   const logColumns = React.useMemo<Column<VerificationLogItem>[]>(
@@ -315,18 +314,10 @@ export default function IdentityVerificationPage() {
           <div className="flex justify-end">
             <button
               type="button"
-              onClick={() => {
-                const resData: BaseKYCResponse = {
-                  status: item.is_success,
-                  message: item.message || "Verification Record",
-                  verification_type: item.verification_type,
-                  data: item.response_data || {}, // <--- Add || {} fallback here
-                };
-                setResultModalData(resData);
-              }}
+              onClick={() => setViewLogDetail(item)}
               className="rounded-lg p-1.5 flex gap-1 items-center bg-primary/10 text-primary hover:bg-primary/20 text-xs font-semibold cursor-pointer"
             >
-              <Eye className="h-3.5 w-3.5" /> View / Print
+              <Eye className="h-3.5 w-3.5" /> View
             </button>
           </div>
         ),
@@ -347,7 +338,7 @@ export default function IdentityVerificationPage() {
         </p>
       </div>
 
-      {/* Tabs */}
+      {/* Scrollable Tabs Nav Bar */}
       <div className="flex border-b border-border overflow-x-auto no-scrollbar scroll-smooth gap-1 sm:gap-2 -mx-3 px-3 sm:mx-0 sm:px-0 pt-16 -mt-12">
         {[
           {
@@ -483,8 +474,12 @@ export default function IdentityVerificationPage() {
             >
               <Icon className="h-4 w-4 shrink-0" />
               <span>{tab.label}</span>
+
+              {/* Info Icon Container */}
               <span className="relative inline-flex items-center">
                 <Info className="h-3.5 w-3.5 text-muted-foreground/60 group-hover:text-muted-foreground transition-colors shrink-0" />
+
+                {/* Floating Tooltip Above (In Front) */}
                 <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:flex group-focus-within:flex flex-col items-center z-50">
                   <span className="bg-foreground text-background text-[11px] font-normal leading-tight rounded-md px-2.5 py-1.5 shadow-xl w-48 whitespace-normal text-center border border-border/20">
                     {tab.description}
@@ -502,14 +497,12 @@ export default function IdentityVerificationPage() {
         {activeTab === "bvn" && (
           <FormProvider {...bvnForm}>
             <form
-              onSubmit={bvnForm.handleSubmit((d) => {
-                console.log("BVN Form Submitted Payload:", d);
-                return handleAction(async () => {
-                  const response = await verificationApi.verifyBVN(d);
-                  console.log("BVN API Raw Response in Component:", response);
-                  return response;
-                }, "BVN lookup failed");
-              })}
+              onSubmit={bvnForm.handleSubmit((d) =>
+                handleAction(
+                  () => verificationApi.verifyBVN(d),
+                  "BVN lookup failed",
+                ),
+              )}
               className="space-y-4 max-w-lg"
             >
               <FormInput name="bvn" label="BVN" placeholder="22123456789" />
@@ -1007,150 +1000,44 @@ export default function IdentityVerificationPage() {
         </div>
       </div>
 
-      {/* Verification Result Modal & Printable Certificate */}
+      {/* Verification Result Modal */}
       <Modal
         isOpen={Boolean(resultModalData)}
         onClose={() => setResultModalData(null)}
-        title="Verification Certificate Preview"
-        maxWidth="xl"
+        title="Verification Result"
       >
-        <div className="space-y-6 max-h-[85vh] overflow-y-auto pr-1">
-          {/* Printable Certificate Container */}
+        <div className="space-y-4 max-h-[80vh] overflow-y-auto pr-1">
           <div
-            id="printable-certificate"
-            className="p-8 bg-white text-slate-900 rounded-2xl border border-slate-200 shadow-sm font-sans w-full max-w-2xl mx-auto print:shadow-none print:border-none print:p-0 print:m-0 print:w-full"
+            className={`flex items-start sm:items-center gap-2 p-3 rounded-xl border ${
+              resultModalData?.status
+                ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-600"
+                : "bg-rose-500/10 border-rose-500/20 text-rose-600"
+            }`}
           >
-            {/* 1. Header: Top-Left Logo & Top-Right Verification Type */}
-            <div className="flex items-start justify-between border-b border-slate-200 pb-6 mb-6 gap-4">
-              <div className="flex flex-col gap-1">
-                <img
-                  src="/inclusion_logo.png"
-                  alt="Inclusion Logo"
-                  className="h-9 w-auto object-contain max-w-45"
-                  onError={(e) => {
-                    e.currentTarget.style.display = "none";
-                  }}
-                />
-                <p className="text-[11px] font-medium text-slate-500 uppercase tracking-widest mt-1">
-                  Statutory Verification Certificate
-                </p>
-              </div>
-
-              <div className="flex flex-col items-end gap-1.5 text-right">
-                <span className="font-bold text-sm text-slate-900 uppercase tracking-wide">
-                  {resultModalData?.verification_type?.replace(/_/g, " ") ||
-                    "KYC Check"}
-                </span>
-                <span
-                  className={`inline-flex items-center px-3 py-0.5 text-[11px] font-bold uppercase tracking-wider rounded-full ${
-                    resultModalData?.status
-                      ? "bg-emerald-100 text-emerald-800 border border-emerald-200"
-                      : "bg-rose-100 text-rose-800 border border-rose-200"
-                  }`}
-                >
-                  {resultModalData?.status ? "VERIFIED" : "FAILED"}
-                </span>
-              </div>
-            </div>
-
-            {/* 2. Verification Metadata Overview */}
-            <div className="grid grid-cols-2 gap-4 text-xs mb-6">
-              <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-100">
-                <span className="text-slate-500 block mb-1 font-medium">
-                  Verification Status
-                </span>
-                <strong className="font-semibold text-slate-800 capitalize">
-                  {resultModalData?.message || "Operation Completed"}
-                </strong>
-              </div>
-              <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-100">
-                <span className="text-slate-500 block mb-1 font-medium">
-                  Issued On
-                </span>
-                <strong className="font-semibold text-slate-800 font-mono text-xs">
-                  {new Date().toLocaleString()}
-                </strong>
-              </div>
-            </div>
-
-            {/* 3. Detailed Data Table (Using JetBrains Mono for Numbers/IDs) */}
-            <div className="space-y-3 mb-8">
-              <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider">
-                Verification Payload
-              </h4>
-              {resultModalData?.data &&
-              typeof resultModalData.data === "object" ? (
-                <div className="border border-slate-200 rounded-xl overflow-hidden divide-y divide-slate-100 bg-white">
-                  {Object.entries(resultModalData.data)
-                    .filter(([key]) => key !== "raw_response")
-                    .map(([key, value]) => {
-                      const stringValue =
-                        typeof value === "object"
-                          ? JSON.stringify(value)
-                          : String(value ?? "N/A");
-                      const isNumericOrId =
-                        /^[0-9+--]+$/.test(stringValue) ||
-                        key.includes("bvn") ||
-                        key.includes("nin") ||
-                        key.includes("phone") ||
-                        key.includes("date");
-
-                      return (
-                        <div
-                          key={key}
-                          className="flex justify-between items-center px-4 py-3 text-xs hover:bg-slate-50/50 transition-colors"
-                        >
-                          <span className="text-slate-500 font-medium capitalize">
-                            {key.replace(/_/g, " ")}
-                          </span>
-                          <span
-                            className={`text-slate-900 ${
-                              isNumericOrId
-                                ? "font-mono font-semibold text-[13px]"
-                                : "font-semibold text-xs"
-                            }`}
-                          >
-                            {stringValue}
-                          </span>
-                        </div>
-                      );
-                    })}
-                </div>
-              ) : (
-                <p className="text-xs text-slate-600 bg-slate-50 p-4 rounded-xl border border-slate-100">
-                  {resultModalData?.message || "No output fields recorded."}
-                </p>
-              )}
-            </div>
-
-            {/* 4. Centered Branding Footer */}
-            <div className="mt-10 pt-6 border-t border-slate-200 flex flex-col items-center justify-center gap-1 text-center">
-              <div className="text-xs font-medium text-slate-600">
-                Powered by{" "}
-                <strong className="text-slate-900 font-bold">
-                  Inclusion ID
-                </strong>
-              </div>
-              <p className="text-[10px] text-slate-400">
-                Official statutory record generated by Inclusion Identity
-                Services.
-              </p>
-            </div>
+            {resultModalData?.status ? (
+              <CheckCircle2 className="h-5 w-5 shrink-0 mt-0.5 sm:mt-0" />
+            ) : (
+              <XCircle className="h-5 w-5 shrink-0 mt-0.5 sm:mt-0" />
+            )}
+            <p className="text-xs font-semibold">
+              {resultModalData?.message || "Verification Completed"}
+            </p>
           </div>
 
-          {/* Action Buttons (Hidden when printing) */}
-          <div className="flex flex-col sm:flex-row items-center justify-end gap-3 pt-2 print:hidden">
+          <div className="rounded-xl border border-border bg-accent p-3">
+            <pre className="text-[10px] sm:text-[11px] font-mono whitespace-pre-wrap break-all overflow-x-auto text-foreground max-h-60">
+              {JSON.stringify(
+                resultModalData?.data || resultModalData?.detail,
+                null,
+                2,
+              )}
+            </pre>
+          </div>
+
+          <div className="flex justify-end pt-2">
             <button
-              type="button"
-              onClick={handlePrint}
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-background px-5 py-2.5 text-xs font-semibold text-foreground hover:bg-accent transition-colors cursor-pointer"
-            >
-              <Printer className="h-4 w-4" /> Print / Save PDF
-            </button>
-            <button
-              type="button"
               onClick={() => setResultModalData(null)}
-              className="w-full sm:w-auto rounded-xl bg-primary px-5 py-2.5 text-xs font-semibold text-primary-foreground hover:bg-primary/90 transition-colors cursor-pointer text-center"
+              className="w-full sm:w-auto rounded-xl bg-primary px-4 py-2.5 text-xs font-semibold text-primary-foreground hover:bg-primary/90 cursor-pointer text-center"
             >
               Close
             </button>
@@ -1158,61 +1045,54 @@ export default function IdentityVerificationPage() {
         </div>
       </Modal>
 
-      {/* Production-Ready Print Styles */}
-      {/* Production-Ready Print Styles */}
-      <style jsx global>{`
-        @media print {
-          /* 1. Reset A4 margins & suppress default browser headers/footers */
-          @page {
-            size: A4 portrait;
-            margin: 0;
-          }
+      {/* Historical Log Detail Modal */}
+      <Modal
+        isOpen={Boolean(viewLogDetail)}
+        onClose={() => setViewLogDetail(null)}
+        title="Verification Audit Log Detail"
+      >
+        {viewLogDetail && (
+          <div className="space-y-4 max-h-[80vh] overflow-y-auto pr-1">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3 text-xs border border-border p-3 rounded-xl bg-card">
+              <div>
+                <span className="text-muted-foreground">Type:</span>{" "}
+                <strong className="uppercase">
+                  {viewLogDetail.verification_type}
+                </strong>
+              </div>
+              <div>
+                <span className="text-muted-foreground">Provider:</span>{" "}
+                <strong className="capitalize">{viewLogDetail.provider}</strong>
+              </div>
+              <div>
+                <span className="text-muted-foreground">Identifier:</span>{" "}
+                <strong className="font-mono break-all">
+                  {viewLogDetail.identifier_used}
+                </strong>
+              </div>
+              <div>
+                <span className="text-muted-foreground">Cost:</span>{" "}
+                <strong>
+                  {viewLogDetail.currency} {viewLogDetail.fee_amount}
+                </strong>
+              </div>
+            </div>
 
-          /* 2. Reset document root layout */
-          html,
-          body {
-            margin: 0 !important;
-            padding: 0 !important;
-            background: #ffffff !important;
-            height: auto !important;
-            overflow: visible !important;
-          }
-
-          /* 3. Hide all UI components except the printable element */
-          body * {
-            visibility: hidden !important;
-          }
-
-          .print\\:hidden,
-          header,
-          nav,
-          aside,
-          button,
-          [role="dialog"] > div:first-child {
-            display: none !important;
-          }
-
-          /* 4. Display the certificate at the top boundary */
-          #printable-certificate,
-          #printable-certificate * {
-            visibility: visible !important;
-          }
-
-          #printable-certificate {
-            position: fixed !important;
-            left: 0 !important;
-            top: 0 !important;
-            width: 100% !important;
-            max-width: 100% !important;
-            margin: 0 !important;
-            padding: 32px !important; /* Controlled padding inside A4 */
-            border: none !important;
-            box-shadow: none !important;
-            background: #ffffff !important;
-            border-radius: 0 !important;
-          }
-        }
-      `}</style>
+            <div className="rounded-xl border border-border bg-accent p-3">
+              <p className="text-[10px] text-muted-foreground mb-1 font-semibold">
+                Response Data
+              </p>
+              <pre className="text-[10px] sm:text-[11px] font-mono whitespace-pre-wrap break-all overflow-x-auto text-foreground max-h-60">
+                {JSON.stringify(
+                  viewLogDetail.response_data || viewLogDetail.message,
+                  null,
+                  2,
+                )}
+              </pre>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }

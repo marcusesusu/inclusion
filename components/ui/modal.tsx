@@ -23,9 +23,9 @@ export function Modal({
   isOpen,
   onClose,
   title,
+  maxWidth = 'md',
   description,
   children,
-  maxWidth = 'md',
 }: ModalProps) {
   React.useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {

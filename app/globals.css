@@ -58,11 +58,45 @@
   --font-mono: var(--font-mono);
 }
 
+/* Custom Scrollbar Styles (WebKit & Firefox) */
+@layer base {
+  /* Standard CSS Scrollbar (Firefox 64+) */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--primary) var(--muted);
+  }
+
+  /* WebKit (Chrome, Safari, Edge) Scrollbar Customization */
+  ::-webkit-scrollbar {
+    width: 4px;  /* Vertical scrollbar width */
+    height: 4px; /* Horizontal scrollbar height */
+  }
+
+  ::-webkit-scrollbar-track {
+    background: var(--muted);
+    border-radius: 9999px;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: var(--primary);
+    border-radius: 9999px;
+    border: 1px solid var(--muted); /* Prevents thumb from clinging edge-to-edge */
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--primary-hover);
+  }
+
+  ::-webkit-scrollbar-corner {
+    background: var(--background); /* Clean intersection angle for dual scrollbars */
+  }
+}
+
 /* Default Body Styling */
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans);
-  font-feature-settings: "cv02", "cv03", "cv04", "cv11"; /* Enables Inter's disambiguation glyphs (e.g. distinct 1, l, I, 0) */
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   antialiased: true;
 }
