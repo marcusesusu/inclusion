@@ -3,7 +3,6 @@
 import * as React from "react";
 import { useForm, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
 import {
   ShieldCheck,
   Building2,
@@ -22,9 +21,8 @@ import {
   Camera,
   Info,
   Printer,
-  Download,
+  Clock,
 } from "lucide-react";
-
 import toast from "react-hot-toast";
 
 import { FormInput } from "@/components/ui/form-input";
@@ -33,73 +31,31 @@ import { Modal } from "@/components/ui/modal";
 import { DataTable, Column } from "@/components/ui/data-table";
 import { verificationApi } from "@/lib/verification";
 import { VerificationLogItem, BaseKYCResponse } from "@/types/verification";
+import {
+  bvnSchema,
+  bvnFaceSchema,
+  ninSchema,
+  ninFaceSchema,
+  phoneSchema,
+  bankSchema,
+  bvnAccountMatchSchema,
+  passportSchema,
+  driverLicenseSchema,
+  voterCardSchema,
+  nationalIdSchema,
+  utilityBillSchema,
+  cacSchema,
+  creditBureauIndSchema,
+  creditBureauBizSchema,
+} from "@/lib/validations/verification";
 
-// Schemas
-const bvnSchema = z.object({
-  bvn: z.string().length(11, "BVN must be 11 digits"),
-});
-const bvnFaceSchema = z.object({
-  bvn: z.string().length(11, "BVN must be 11 digits"),
-  image_base64: z.string().min(10, "Base64 image is required"),
-});
-const ninSchema = z.object({
-  nin: z.string().length(11, "NIN must be 11 digits"),
-  date_of_birth: z.string().optional(),
-});
-const ninFaceSchema = z.object({
-  nin: z.string().length(11, "NIN must be 11 digits"),
-  image_base64: z.string().min(10, "Base64 image is required"),
-});
-const phoneSchema = z.object({
-  phone_number: z.string().min(10, "Valid phone number is required"),
-});
-const bankSchema = z.object({
-  account_number: z.string().length(10, "Account number must be 10 digits"),
-  bank_code: z.string().min(3, "Bank code is required"),
-});
-const bvnAccountMatchSchema = z.object({
-  bvn: z.string().length(11, "BVN must be 11 digits"),
-  account_number: z.string().length(10, "Account number must be 10 digits"),
-  bank_code: z.string().min(3, "Bank code is required"),
-});
-const passportSchema = z.object({
-  passport_number: z.string().min(6, "Passport number is required"),
-  first_name: z.string().min(1, "First name is required"),
-  last_name: z.string().min(1, "Last name is required"),
-  date_of_birth: z.string().min(1, "Date of birth is required"),
-});
-const driverLicenseSchema = z.object({
-  license_number: z.string().min(5, "License number is required"),
-  date_of_birth: z.string().min(1, "Date of birth is required"),
-});
-const voterCardSchema = z.object({
-  vin: z.string().min(5, "Voter Identification Number is required"),
-  state: z.string().min(2, "State is required"),
-  last_name: z.string().min(1, "Last name is required"),
-});
-const nationalIdSchema = z.object({
-  id_number: z.string().min(5, "ID number is required"),
-  first_name: z.string().min(1, "First name is required"),
-  last_name: z.string().min(1, "Last name is required"),
-});
-const utilityBillSchema = z.object({
-  customer_id: z.string().min(3, "Customer ID is required"),
-  provider: z.string().min(2, "Provider is required"),
-});
-const cacSchema = z.object({
-  rc_number: z.string().min(3, "RC / BN Number is required"),
-  company_type: z.string().optional(),
-});
-const creditBureauIndSchema = z.object({
-  bvn: z.string().length(11, "BVN must be 11 digits"),
-  first_name: z.string().min(1, "First name is required"),
-  last_name: z.string().min(1, "Last name is required"),
-  phone_number: z.string().min(10, "Phone number is required"),
-});
-const creditBureauBizSchema = z.object({
-  rc_number: z.string().min(3, "RC Number is required"),
-  company_name: z.string().min(1, "Company Name is required"),
-});
+const CACHE_PREFIX = "kyc_res_";
+const CACHE_TTL_MS = 12 * 60 * 60 * 1000; // 12 Hours in milliseconds
+
+type CachedResponse = {
+  timestamp: number;
+  data: BaseKYCResponse;
+};
 
 type TabType =
   | "bvn"
@@ -122,21 +78,49 @@ type TabType =
 
 export default function IdentityVerificationPage() {
   const [activeTab, setActiveTab] = React.useState<TabType>("bvn");
-
-  // Verification Logs State
   const [logs, setLogs] = React.useState<VerificationLogItem[]>([]);
   const [totalLogs, setTotalLogs] = React.useState(0);
   const [page, setPage] = React.useState(1);
   const limit = 10;
   const [isLoadingLogs, setIsLoadingLogs] = React.useState(true);
 
-  // Temporary In-Memory Result Storage
   const [resultModalData, setResultModalData] =
     React.useState<BaseKYCResponse | null>(null);
-  const [viewLogDetail, setViewLogDetail] =
-    React.useState<VerificationLogItem | null>(null);
 
-  const printRef = React.useRef<HTMLDivElement>(null);
+  // Helper function to cache successful responses
+  const cacheVerificationResult = (
+    logId: string,
+    response: BaseKYCResponse,
+  ) => {
+    try {
+      const payload: CachedResponse = {
+        timestamp: Date.now(),
+        data: response,
+      };
+      localStorage.setItem(`${CACHE_PREFIX}${logId}`, JSON.stringify(payload));
+    } catch {
+      // Ignore storage quota limits
+    }
+  };
+
+  // Helper function to fetch cached response if valid
+  const getCachedVerificationResult = (
+    logId: string,
+  ): BaseKYCResponse | null => {
+    try {
+      const raw = localStorage.getItem(`${CACHE_PREFIX}${logId}`);
+      if (!raw) return null;
+
+      const cached: CachedResponse = JSON.parse(raw);
+      if (Date.now() - cached.timestamp < CACHE_TTL_MS) {
+        return cached.data;
+      }
+      localStorage.removeItem(`${CACHE_PREFIX}${logId}`);
+    } catch {
+      // Invalid cache entry
+    }
+    return null;
+  };
 
   const fetchLogs = React.useCallback(async () => {
     setIsLoadingLogs(true);
@@ -237,33 +221,33 @@ export default function IdentityVerificationPage() {
     try {
       const res = await fn();
       setResultModalData(res);
-      fetchLogs();
+
+      // Fetch the updated logs directly from the API response
+      const logsRes = await verificationApi.getLogs(0, limit);
+      setLogs(logsRes.items || []);
+      setTotalLogs(logsRes.total || 0);
+
+      // Save the full response in local storage using the new log ID
+      const newestLog = logsRes.items?.[0];
+      if (newestLog?.id) {
+        cacheVerificationResult(String(newestLog.id), res);
+      }
     } catch (err: any) {
       toast.error(err?.response?.data?.detail || fallbackMsg);
     }
   };
 
   const handlePrint = () => {
-    // 1. Format the verification name (e.g., "BVN Verification")
     const verificationName =
       resultModalData?.verification_type
         ?.replace(/_/g, " ")
         ?.replace(/\b\w/g, (l) => l.toUpperCase()) || "KYC Check";
 
-    // 2. Format today's date for filename cleanliness (e.g., "2026-09-08")
     const formattedDate = new Date().toISOString().split("T")[0];
-
-    // 3. Construct desired document title
     const printTitle = `Inclusion ID - ${verificationName} Certificate (${formattedDate})`;
-
-    // 4. Save original document title & assign new title for print output
     const originalTitle = document.title;
     document.title = printTitle;
-
-    // 5. Trigger browser print dialog
     window.print();
-
-    // 6. Restore original page title after printing
     document.title = originalTitle;
   };
 
@@ -331,25 +315,40 @@ export default function IdentityVerificationPage() {
       {
         key: "actions",
         header: <div className="text-right">Actions</div>,
-        cell: (item) => (
-          <div className="flex justify-end">
-            <button
-              type="button"
-              onClick={() => {
-                const resData: BaseKYCResponse = {
-                  status: item.is_success,
-                  message: item.message || "Verification Record",
-                  verification_type: item.verification_type,
-                  data: item.response_data || {}, // <--- Add || {} fallback here
-                };
-                setResultModalData(resData);
-              }}
-              className="rounded-lg p-1.5 flex gap-1 items-center bg-primary/10 text-primary hover:bg-primary/20 text-xs font-semibold cursor-pointer"
-            >
-              <Eye className="h-3.5 w-3.5" /> View / Print
-            </button>
-          </div>
-        ),
+        cell: (item) => {
+          // Lookup cached response directly using log ID
+          const cached = getCachedVerificationResult(String(item.id));
+
+          return (
+            <div className="flex justify-end items-center gap-1.5">
+              {cached && (
+                <span className="inline-flex items-center gap-1 text-[10px] text-amber-600 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 font-medium">
+                  <Clock className="h-3 w-3" /> Cached (12h)
+                </span>
+              )}
+              <button
+                type="button"
+                onClick={() => {
+                  if (cached) {
+                    setResultModalData(cached);
+                  } else {
+                    const resData: BaseKYCResponse = {
+                      status: item.is_success,
+                      message: item.message || "Verification Record",
+                      verification_type: item.verification_type,
+                      data: item.response_data || {},
+                    };
+                    setResultModalData(resData);
+                    cacheVerificationResult(String(item.id), resData);
+                  }
+                }}
+                className="rounded-lg p-1.5 flex gap-1 items-center bg-primary/10 text-primary hover:bg-primary/20 text-xs font-semibold cursor-pointer"
+              >
+                <Eye className="h-3.5 w-3.5" /> View / Print
+              </button>
+            </div>
+          );
+        },
       },
     ],
     [],
@@ -509,7 +508,7 @@ export default function IdentityVerificationPage() {
                   <span className="bg-foreground text-background text-[11px] font-normal leading-tight rounded-md px-2.5 py-1.5 shadow-xl w-48 whitespace-normal text-center border border-border/20">
                     {tab.description}
                   </span>
-                  <span className="w-2 h-2 -mt-1 bg-foreground rotate-45 shrink-0"></span>
+                  <span className="w-2 h-2 -mt-1 bg-foreground rotate-45 shrink-0" />
                 </span>
               </span>
             </button>
@@ -522,14 +521,12 @@ export default function IdentityVerificationPage() {
         {activeTab === "bvn" && (
           <FormProvider {...bvnForm}>
             <form
-              onSubmit={bvnForm.handleSubmit((d) => {
-                console.log("BVN Form Submitted Payload:", d);
-                return handleAction(async () => {
-                  const response = await verificationApi.verifyBVN(d);
-                  console.log("BVN API Raw Response in Component:", response);
-                  return response;
-                }, "BVN lookup failed");
-              })}
+              onSubmit={bvnForm.handleSubmit((d) =>
+                handleAction(
+                  () => verificationApi.verifyBVN(d),
+                  "BVN lookup failed",
+                ),
+              )}
               className="space-y-4 max-w-lg"
             >
               <FormInput name="bvn" label="BVN" placeholder="22123456789" />
@@ -1035,12 +1032,10 @@ export default function IdentityVerificationPage() {
         maxWidth="xl"
       >
         <div className="space-y-6 max-h-[85vh] overflow-y-auto pr-1">
-          {/* Printable Certificate Container */}
           <div
             id="printable-certificate"
             className="p-8 bg-white text-slate-900 rounded-2xl border border-slate-200 shadow-sm font-sans w-full max-w-2xl mx-auto print:shadow-none print:border-none print:p-0 print:m-0 print:w-full"
           >
-            {/* 1. Header: Top-Left Logo & Top-Right Verification Type */}
             <div className="flex items-start justify-between border-b border-slate-200 pb-6 mb-6 gap-4">
               <div className="flex flex-col gap-1">
                 <img
@@ -1073,7 +1068,6 @@ export default function IdentityVerificationPage() {
               </div>
             </div>
 
-            {/* 2. Verification Metadata Overview */}
             <div className="grid grid-cols-2 gap-4 text-xs mb-6">
               <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-100">
                 <span className="text-slate-500 block mb-1 font-medium">
@@ -1093,7 +1087,6 @@ export default function IdentityVerificationPage() {
               </div>
             </div>
 
-            {/* ID Photo Preview Section (Shows only if image data exists) */}
             {(() => {
               const rawImg =
                 resultModalData?.data?.base64Image ||
@@ -1135,7 +1128,6 @@ export default function IdentityVerificationPage() {
               );
             })()}
 
-            {/* 3. Detailed Data Table */}
             <div className="space-y-3 mb-8">
               <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider">
                 Verification Payload
@@ -1145,7 +1137,6 @@ export default function IdentityVerificationPage() {
                 <div className="border border-slate-200 rounded-xl overflow-hidden divide-y divide-slate-100 bg-white">
                   {Object.entries(resultModalData.data)
                     .filter(([key, value]) => {
-                      // 1. Omit internal raw_response and image string keys from table view
                       const lowerKey = key.toLowerCase();
                       if (
                         key === "raw_response" ||
@@ -1156,10 +1147,8 @@ export default function IdentityVerificationPage() {
                       )
                         return false;
 
-                      // 2. Omit null or undefined
                       if (value === null || value === undefined) return false;
 
-                      // 3. Omit empty or literal string representations ("null", "undefined", "")
                       const strVal = String(value).trim();
                       if (
                         strVal === "" ||
@@ -1191,11 +1180,7 @@ export default function IdentityVerificationPage() {
                             {key.replace(/_/g, " ")}
                           </span>
                           <span
-                            className={`text-slate-900 ${
-                              isNumericOrId
-                                ? "font-mono font-semibold text-[13px]"
-                                : "font-semibold text-xs"
-                            }`}
+                            className={`text-slate-900 ${isNumericOrId ? "font-mono font-semibold text-[13px]" : "font-semibold text-xs"}`}
                           >
                             {stringValue}
                           </span>
@@ -1210,7 +1195,6 @@ export default function IdentityVerificationPage() {
               )}
             </div>
 
-            {/* 4. Centered Branding Footer */}
             <div className="mt-10 pt-6 border-t border-slate-200 flex flex-col items-center justify-center gap-1 text-center">
               <div className="text-xs font-medium text-slate-600">
                 Powered by{" "}
@@ -1225,7 +1209,6 @@ export default function IdentityVerificationPage() {
             </div>
           </div>
 
-          {/* Action Buttons (Hidden when printing) */}
           <div className="flex flex-col sm:flex-row items-center justify-end gap-3 pt-2 print:hidden">
             <button
               type="button"
@@ -1245,16 +1228,12 @@ export default function IdentityVerificationPage() {
         </div>
       </Modal>
 
-      {/* Production-Ready Print Styles */}
       <style jsx global>{`
         @media print {
-          /* 1. Reset A4 margins & suppress default browser headers/footers */
           @page {
             size: A4 portrait;
             margin: 0;
           }
-
-          /* 2. Reset document root layout */
           html,
           body {
             margin: 0 !important;
@@ -1263,12 +1242,9 @@ export default function IdentityVerificationPage() {
             height: auto !important;
             overflow: visible !important;
           }
-
-          /* 3. Hide all UI components except the printable element */
           body * {
             visibility: hidden !important;
           }
-
           .print\\:hidden,
           header,
           nav,
@@ -1277,13 +1253,10 @@ export default function IdentityVerificationPage() {
           [role="dialog"] > div:first-child {
             display: none !important;
           }
-
-          /* 4. Display the certificate at the top boundary */
           #printable-certificate,
           #printable-certificate * {
             visibility: visible !important;
           }
-
           #printable-certificate {
             position: fixed !important;
             left: 0 !important;
@@ -1291,7 +1264,7 @@ export default function IdentityVerificationPage() {
             width: 100% !important;
             max-width: 100% !important;
             margin: 0 !important;
-            padding: 32px !important; /* Controlled padding inside A4 */
+            padding: 32px !important;
             border: none !important;
             box-shadow: none !important;
             background: #ffffff !important;

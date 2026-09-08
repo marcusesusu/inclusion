@@ -111,7 +111,7 @@ export function DataTable<T extends Record<string, any>>({
               <ChevronLeft className="h-3.5 w-3.5" /> Previous
             </button>
 
-            <span className="text-xs font-semibold px-2">
+            <span hidden className="text-xs font-semibold px-2">
               Page {currentPage} of {totalPages}
             </span>
 
