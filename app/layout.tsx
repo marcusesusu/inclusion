@@ -24,7 +24,6 @@ const siteConfig = {
     'Secure, instant digital identity verification platform. Fast KYC compliance, automated NIN, BVN, driver license, and passport verification.',
 };
 
-// Comprehensive SEO Metadata
 export const metadata: Metadata = {
   metadataBase: new URL(siteConfig.url),
   manifest: '/manifest.json',
