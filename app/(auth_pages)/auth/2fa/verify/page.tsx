@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useForm, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -18,7 +19,7 @@ import { authApi } from "@/lib/auth";
 import { ApiErrorResponse } from "@/types/auth";
 import { AuthLayout } from "@/components/auth/auth-layout";
 
-export default function Verify2FAPage() {
+function Verify2FAFormContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -75,7 +76,6 @@ export default function Verify2FAPage() {
 
         if (res.user) {
           localStorage.setItem("user", JSON.stringify(res.user));
-          // Set cookie so Next.js Proxy/Middleware can read it instantly on the server
           document.cookie = `user_role=${res.user.role}; path=/; max-age=604800; SameSite=Lax`;
         }
 
@@ -161,5 +161,19 @@ export default function Verify2FAPage() {
         </div>
       </div>
     </AuthLayout>
+  );
+}
+
+export default function Verify2FAPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center p-4">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+        </div>
+      }
+    >
+      <Verify2FAFormContent />
+    </Suspense>
   );
 }

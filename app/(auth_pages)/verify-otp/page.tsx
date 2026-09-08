@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -14,7 +15,7 @@ import { authApi } from '@/lib/auth';
 import { ApiErrorResponse } from '@/types/auth';
 import { AuthLayout } from '@/components/auth/auth-layout';
 
-export default function VerifyOtpPage() {
+function VerifyOtpFormContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const email = searchParams.get('email') || '';
@@ -152,5 +153,19 @@ export default function VerifyOtpPage() {
         )}
       </div>
     </AuthLayout>
+  );
+}
+
+export default function VerifyOtpPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center p-4">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      }
+    >
+      <VerifyOtpFormContent />
+    </Suspense>
   );
 }
