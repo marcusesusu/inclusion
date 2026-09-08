@@ -278,15 +278,15 @@ export default function IdentityVerificationPage() {
           </span>
         ),
       },
-      {
-        key: "provider",
-        header: "Provider",
-        cell: (item) => (
-          <span className="capitalize text-xs font-medium">
-            {item.provider}
-          </span>
-        ),
-      },
+      // {
+      //   key: "provider",
+      //   header: "Provider",
+      //   cell: (item) => (
+      //     <span className="capitalize text-xs font-medium">
+      //       {item.provider}
+      //     </span>
+      //   ),
+      // },
       {
         key: "fee_amount",
         header: "Fee",
@@ -1153,7 +1153,7 @@ export default function IdentityVerificationPage() {
 
             <div className="space-y-3 mb-8">
               <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider">
-                Verification Data
+                {/* Verification Data */}
               </h4>
               {(() => {
                 if (
@@ -1174,6 +1174,24 @@ export default function IdentityVerificationPage() {
                     .replace(/_/g, " ")
                     .trim()
                     .replace(/\b\w/g, (l) => l.toUpperCase());
+
+                // Helper to check if key or string is image/signature
+                const isImageKey = (key: string) => {
+                  const lower = key.toLowerCase();
+                  return (
+                    lower.includes("signature") ||
+                    lower.includes("photo") ||
+                    lower.includes("image") ||
+                    lower.includes("base64")
+                  );
+                };
+
+                // Helper to format image source safely
+                const getImageSrc = (val: string) => {
+                  return val.startsWith("data:image")
+                    ? val
+                    : `data:image/jpeg;base64,${val}`;
+                };
 
                 // Filter valid entries
                 const entries = Object.entries(resultModalData.data).filter(
@@ -1198,16 +1216,58 @@ export default function IdentityVerificationPage() {
                   },
                 );
 
+                const imageEntries = entries.filter(([key, val]) => {
+                  if (typeof val !== "string") return false;
+                  return (
+                    isImageKey(key) ||
+                    val.startsWith("/9j/") ||
+                    val.startsWith("data:image")
+                  );
+                });
+
                 const scalarEntries = entries.filter(
-                  ([, val]) => typeof val !== "object",
+                  ([key, val]) =>
+                    typeof val !== "object" &&
+                    !isImageKey(key) &&
+                    !String(val).startsWith("/9j/") &&
+                    !String(val).startsWith("data:image"),
                 );
+
                 const nestedEntries = entries.filter(
                   ([, val]) => typeof val === "object" && val !== null,
                 );
 
                 return (
                   <div className="space-y-4">
-                    {/* 1. Scalar Key-Value List */}
+                    {/* 1. Image & Signature Cards */}
+                    {imageEntries.length > 0 && (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {imageEntries.map(([key, value]) => (
+                          <div
+                            key={key}
+                            className="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center gap-3"
+                          >
+                            <div className="relative h-16 w-24 shrink-0 overflow-hidden rounded-lg border border-slate-300 bg-white p-1 shadow-xs flex items-center justify-center">
+                              <img
+                                src={getImageSrc(String(value))}
+                                alt={formatLabel(key)}
+                                className="h-full w-full object-contain"
+                              />
+                            </div>
+                            <div>
+                              <h5 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
+                                {formatLabel(key)}
+                              </h5>
+                              <p className="text-[10px] text-slate-500 mt-0.5">
+                                Statutory signature record
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* 2. Scalar Key-Value List */}
                     {scalarEntries.length > 0 && (
                       <div className="border border-slate-200 rounded-xl overflow-hidden divide-y divide-slate-100 bg-white">
                         {scalarEntries.map(([key, value]) => {
@@ -1242,7 +1302,7 @@ export default function IdentityVerificationPage() {
                       </div>
                     )}
 
-                    {/* 2. Nested Objects (e.g., Credit Score Breakdown) */}
+                    {/* 3. Nested Objects (e.g., Credit Score Breakdown) */}
                     {nestedEntries.map(([parentKey, nestedVal]) => {
                       const subEntries = Object.entries(
                         nestedVal as Record<string, any>,
