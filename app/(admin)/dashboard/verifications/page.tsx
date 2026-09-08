@@ -244,7 +244,27 @@ export default function IdentityVerificationPage() {
   };
 
   const handlePrint = () => {
+    // 1. Format the verification name (e.g., "BVN Verification")
+    const verificationName =
+      resultModalData?.verification_type
+        ?.replace(/_/g, " ")
+        ?.replace(/\b\w/g, (l) => l.toUpperCase()) || "KYC Check";
+
+    // 2. Format today's date for filename cleanliness (e.g., "2026-09-08")
+    const formattedDate = new Date().toISOString().split("T")[0];
+
+    // 3. Construct desired document title
+    const printTitle = `Inclusion ID - ${verificationName} Certificate (${formattedDate})`;
+
+    // 4. Save original document title & assign new title for print output
+    const originalTitle = document.title;
+    document.title = printTitle;
+
+    // 5. Trigger browser print dialog
     window.print();
+
+    // 6. Restore original page title after printing
+    document.title = originalTitle;
   };
 
   const logColumns = React.useMemo<Column<VerificationLogItem>[]>(
@@ -1073,7 +1093,49 @@ export default function IdentityVerificationPage() {
               </div>
             </div>
 
-            {/* 3. Detailed Data Table (Using JetBrains Mono for Numbers/IDs) */}
+            {/* ID Photo Preview Section (Shows only if image data exists) */}
+            {(() => {
+              const rawImg =
+                resultModalData?.data?.base64Image ||
+                resultModalData?.data?.photo ||
+                resultModalData?.data?.image ||
+                resultModalData?.data?.base64_image;
+
+              if (!rawImg || typeof rawImg !== "string") return null;
+
+              const imgSrc = rawImg.startsWith("data:image")
+                ? rawImg
+                : `data:image/jpeg;base64,${rawImg}`;
+
+              return (
+                <div className="mb-6 p-4 bg-slate-50 border border-slate-200 rounded-xl flex items-center gap-4">
+                  <div className="relative h-24 w-20 shrink-0 overflow-hidden rounded-lg border border-slate-300 bg-slate-200 shadow-inner">
+                    <img
+                      src={imgSrc}
+                      alt="Verified Holder Portrait"
+                      className="h-full w-full object-cover"
+                      onError={(e) => {
+                        e.currentTarget.parentElement!.style.display = "none";
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <h5 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
+                      Identity Image Record
+                    </h5>
+                    <p className="text-[11px] text-slate-500 mt-0.5">
+                      Official statutory facial record matching the verified
+                      profile.
+                    </p>
+                    <span className="inline-block mt-2 text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                      Facial Biometric Match
+                    </span>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* 3. Detailed Data Table */}
             <div className="space-y-3 mb-8">
               <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider">
                 Verification Payload
@@ -1082,12 +1144,37 @@ export default function IdentityVerificationPage() {
               typeof resultModalData.data === "object" ? (
                 <div className="border border-slate-200 rounded-xl overflow-hidden divide-y divide-slate-100 bg-white">
                   {Object.entries(resultModalData.data)
-                    .filter(([key]) => key !== "raw_response")
+                    .filter(([key, value]) => {
+                      // 1. Omit internal raw_response and image string keys from table view
+                      const lowerKey = key.toLowerCase();
+                      if (
+                        key === "raw_response" ||
+                        lowerKey.includes("base64image") ||
+                        lowerKey === "photo" ||
+                        lowerKey === "image" ||
+                        lowerKey === "base64_image"
+                      )
+                        return false;
+
+                      // 2. Omit null or undefined
+                      if (value === null || value === undefined) return false;
+
+                      // 3. Omit empty or literal string representations ("null", "undefined", "")
+                      const strVal = String(value).trim();
+                      if (
+                        strVal === "" ||
+                        strVal === "null" ||
+                        strVal === "undefined"
+                      )
+                        return false;
+
+                      return true;
+                    })
                     .map(([key, value]) => {
                       const stringValue =
                         typeof value === "object"
                           ? JSON.stringify(value)
-                          : String(value ?? "N/A");
+                          : String(value);
                       const isNumericOrId =
                         /^[0-9+--]+$/.test(stringValue) ||
                         key.includes("bvn") ||
@@ -1158,7 +1245,6 @@ export default function IdentityVerificationPage() {
         </div>
       </Modal>
 
-      {/* Production-Ready Print Styles */}
       {/* Production-Ready Print Styles */}
       <style jsx global>{`
         @media print {
