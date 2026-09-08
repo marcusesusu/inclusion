@@ -18,8 +18,8 @@ const jetbrainsMono = JetBrains_Mono({
 
 const siteConfig = {
   name: 'inclusion.id',
-  url: 'https://inclusion.id', // Replace with your production domain
-  ogImage: 'https://inclusion.id/og-image.png',
+  url: 'https://portal.inclusion.id',
+  ogImage: 'https://portal.inclusion.id/og-image.png',
   description:
     'Secure, instant digital identity verification platform. Fast KYC compliance, automated NIN, BVN, driver license, and passport verification.',
 };
@@ -27,6 +27,7 @@ const siteConfig = {
 // Comprehensive SEO Metadata
 export const metadata: Metadata = {
   metadataBase: new URL(siteConfig.url),
+  manifest: '/manifest.json',
   title: {
     default: 'Inclusion.id :: Secure Identity Verification & KYC Platform',
     template: '%s | inclusion.id',
@@ -86,19 +87,31 @@ export const metadata: Metadata = {
     title: 'inclusion.id :: Instant Digital Identity Verification',
     description: siteConfig.description,
     images: [siteConfig.ogImage],
-    creator: '@inclusion_id', // Replace with your actual handle
+    creator: '@inclusion_id',
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'inclusion.id',
   },
   icons: {
-    icon: '/favicon.ico',
-    shortcut: '/favicon-16x16.png',
-    apple: '/apple-touch-icon.png',
+    icon: [
+      { url: '/favicon.ico' },
+      { url: '/favicon-16x16.png', sizes: '16x16', type: 'image/png' },
+      { url: '/favicon-32x32.png', sizes: '32x32', type: 'image/png' },
+    ],
+    shortcut: '/favicon-32x32.png',
+    apple: [
+      { url: '/apple-icon-180x180.png', sizes: '180x180', type: 'image/png' },
+    ],
   },
 };
 
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 5,
+  maximumScale: 1,
+  userScalable: false, // Prevents accidental UI zooming on mobile input focus
   themeColor: [
     { media: '(prefers-color-scheme: light)', color: '#ffffff' },
     { media: '(prefers-color-scheme: dark)', color: '#0a0a0a' },
