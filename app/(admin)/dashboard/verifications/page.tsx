@@ -48,6 +48,8 @@ import {
   creditBureauIndSchema,
   creditBureauBizSchema,
 } from "@/lib/validations/verification";
+import { FormSelect } from "@/components/ui/form-select";
+import { NIGERIAN_DISCOS } from "@/settings";
 
 const CACHE_PREFIX = "kyc_res_";
 const CACHE_TTL_MS = 12 * 60 * 60 * 1000; // 12 Hours in milliseconds
@@ -180,6 +182,7 @@ export default function IdentityVerificationPage() {
     resolver: zodResolver(passportSchema),
     defaultValues: {
       passport_number: "",
+      nin: "",
       first_name: "",
       last_name: "",
       date_of_birth: "",
@@ -199,7 +202,11 @@ export default function IdentityVerificationPage() {
   });
   const utilityBillForm = useForm({
     resolver: zodResolver(utilityBillSchema),
-    defaultValues: { customer_id: "", provider: "" },
+    defaultValues: {
+      customer_id: "",
+      provider: "IKEDC",
+      meter_type: "PREPAID",
+    },
   });
   const cacForm = useForm({
     resolver: zodResolver(cacSchema),
@@ -767,6 +774,13 @@ export default function IdentityVerificationPage() {
                 placeholder="A12345678"
               />
               <FormInput
+                name="nin"
+                label="National Identification Number (NIN)"
+                placeholder="51123456789"
+                maxLength={11}
+                type="number"
+              />
+              <FormInput
                 name="first_name"
                 label="First Name"
                 placeholder="John"
@@ -894,10 +908,19 @@ export default function IdentityVerificationPage() {
                 label="Customer ID / Meter Number"
                 placeholder="101010101"
               />
-              <FormInput
+              <FormSelect
                 name="provider"
-                label="Provider / Disco"
-                placeholder="IKEDC"
+                label="Electricity Provider (Disco)"
+                placeholder="Select Electricity Provider"
+                options={[...NIGERIAN_DISCOS]}
+              />
+              <FormSelect
+                name="meter_type"
+                label="Meter Type"
+                options={[
+                  { label: "Prepaid", value: "PREPAID" },
+                  { label: "Postpaid", value: "POSTPAID" },
+                ]}
               />
               <FormButton
                 isLoading={utilityBillForm.formState.isSubmitting}
@@ -1130,71 +1153,139 @@ export default function IdentityVerificationPage() {
 
             <div className="space-y-3 mb-8">
               <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider">
-                Verification Payload
+                Verification Data
               </h4>
-              {resultModalData?.data &&
-              typeof resultModalData.data === "object" ? (
-                <div className="border border-slate-200 rounded-xl overflow-hidden divide-y divide-slate-100 bg-white">
-                  {Object.entries(resultModalData.data)
-                    .filter(([key, value]) => {
-                      const lowerKey = key.toLowerCase();
-                      if (
-                        key === "raw_response" ||
-                        lowerKey.includes("base64image") ||
-                        lowerKey === "photo" ||
-                        lowerKey === "image" ||
-                        lowerKey === "base64_image"
-                      )
-                        return false;
+              {(() => {
+                if (
+                  !resultModalData?.data ||
+                  typeof resultModalData.data !== "object"
+                ) {
+                  return (
+                    <p className="text-xs text-slate-600 bg-slate-50 p-4 rounded-xl border border-slate-100">
+                      {resultModalData?.message || "No output fields recorded."}
+                    </p>
+                  );
+                }
 
-                      if (value === null || value === undefined) return false;
+                // Helper to convert camelCase/snake_case to Title Case
+                const formatLabel = (key: string) =>
+                  key
+                    .replace(/([A-Z])/g, " $1")
+                    .replace(/_/g, " ")
+                    .trim()
+                    .replace(/\b\w/g, (l) => l.toUpperCase());
 
-                      const strVal = String(value).trim();
-                      if (
-                        strVal === "" ||
-                        strVal === "null" ||
-                        strVal === "undefined"
-                      )
-                        return false;
+                // Filter valid entries
+                const entries = Object.entries(resultModalData.data).filter(
+                  ([key, value]) => {
+                    const lowerKey = key.toLowerCase();
+                    if (
+                      key === "raw_response" ||
+                      lowerKey.includes("base64image") ||
+                      lowerKey === "photo" ||
+                      lowerKey === "image" ||
+                      lowerKey === "base64_image"
+                    )
+                      return false;
 
-                      return true;
-                    })
-                    .map(([key, value]) => {
-                      const stringValue =
-                        typeof value === "object"
-                          ? JSON.stringify(value)
-                          : String(value);
-                      const isNumericOrId =
-                        /^[0-9+--]+$/.test(stringValue) ||
-                        key.includes("bvn") ||
-                        key.includes("nin") ||
-                        key.includes("phone") ||
-                        key.includes("date");
+                    if (value === null || value === undefined) return false;
+                    const strVal = String(value).trim();
+                    return (
+                      strVal !== "" &&
+                      strVal !== "null" &&
+                      strVal !== "undefined"
+                    );
+                  },
+                );
+
+                const scalarEntries = entries.filter(
+                  ([, val]) => typeof val !== "object",
+                );
+                const nestedEntries = entries.filter(
+                  ([, val]) => typeof val === "object" && val !== null,
+                );
+
+                return (
+                  <div className="space-y-4">
+                    {/* 1. Scalar Key-Value List */}
+                    {scalarEntries.length > 0 && (
+                      <div className="border border-slate-200 rounded-xl overflow-hidden divide-y divide-slate-100 bg-white">
+                        {scalarEntries.map(([key, value]) => {
+                          const stringValue = String(value);
+                          const isNumericOrId =
+                            /^[0-9+\--]+$/.test(stringValue) ||
+                            key.toLowerCase().includes("bvn") ||
+                            key.toLowerCase().includes("nin") ||
+                            key.toLowerCase().includes("phone") ||
+                            key.toLowerCase().includes("date");
+
+                          return (
+                            <div
+                              key={key}
+                              className="flex justify-between items-center px-4 py-3 text-xs hover:bg-slate-50/50 transition-colors"
+                            >
+                              <span className="text-slate-500 font-medium">
+                                {formatLabel(key)}
+                              </span>
+                              <span
+                                className={`text-slate-900 ${
+                                  isNumericOrId
+                                    ? "font-mono font-semibold text-[13px]"
+                                    : "font-semibold text-xs"
+                                }`}
+                              >
+                                {stringValue}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {/* 2. Nested Objects (e.g., Credit Score Breakdown) */}
+                    {nestedEntries.map(([parentKey, nestedVal]) => {
+                      const subEntries = Object.entries(
+                        nestedVal as Record<string, any>,
+                      ).filter(([, val]) => {
+                        if (val === null || val === undefined) return false;
+                        const str = String(val).trim();
+                        return (
+                          str !== "" && str !== "null" && str !== "undefined"
+                        );
+                      });
+
+                      if (subEntries.length === 0) return null;
 
                       return (
                         <div
-                          key={key}
-                          className="flex justify-between items-center px-4 py-3 text-xs hover:bg-slate-50/50 transition-colors"
+                          key={parentKey}
+                          className="p-4 bg-slate-50/80 border border-slate-200 rounded-xl space-y-3"
                         >
-                          <span className="text-slate-500 font-medium capitalize">
-                            {key.replace(/_/g, " ")}
-                          </span>
-                          <span
-                            className={`text-slate-900 ${isNumericOrId ? "font-mono font-semibold text-[13px]" : "font-semibold text-xs"}`}
-                          >
-                            {stringValue}
-                          </span>
+                          <h5 className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">
+                            {formatLabel(parentKey)} Breakdown
+                          </h5>
+                          <div className="grid grid-cols-2 gap-2.5">
+                            {subEntries.map(([subKey, subValue]) => (
+                              <div
+                                key={subKey}
+                                className="bg-white p-2.5 rounded-lg border border-slate-200/80 shadow-2xs"
+                              >
+                                <span className="text-[10px] text-slate-500 font-medium block truncate">
+                                  {formatLabel(subKey)}
+                                </span>
+                                <strong className="text-xs font-semibold text-slate-800 font-mono mt-0.5 block">
+                                  {String(subValue)}
+                                </strong>
+                              </div>
+                            ))}
+                          </div>
                         </div>
                       );
                     })}
-                </div>
-              ) : (
-                <p className="text-xs text-slate-600 bg-slate-50 p-4 rounded-xl border border-slate-100">
-                  {resultModalData?.message || "No output fields recorded."}
-                </p>
-              )}
+                  </div>
+                );
+              })()}
             </div>
-
             <div className="mt-10 pt-6 border-t border-slate-200 flex flex-col items-center justify-center gap-1 text-center">
               <div className="text-xs font-medium text-slate-600">
                 Powered by{" "}

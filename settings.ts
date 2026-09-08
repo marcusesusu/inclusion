@@ -33,7 +33,7 @@ export const NAV_ITEMS: NavItem[] = [
     label: "Verifications",
     href: "/dashboard/verifications",
     icon: ShieldAlertIcon,
-    allowedRoles: ["superadmin", "admin"],
+    allowedRoles: ["superadmin", "admin", "staff"],
   },
   {
     label: "Teams",
@@ -54,3 +54,18 @@ export const NAV_ITEMS: NavItem[] = [
     allowedRoles: ["superadmin", "admin"],
   },
 ];
+
+export const NIGERIAN_DISCOS = [
+  { label: "Ikeja Electric (IKEDC)", value: "IKEDC" },
+  { label: "Eko Electricity Distribution (EKEDC)", value: "EKEDC" },
+  { label: "Abuja Electricity Distribution (AEDC)", value: "AEDC" },
+  { label: "Ibadan Electricity Distribution (IBEDC)", value: "IBEDC" },
+  { label: "Enugu Electricity Distribution (EEDC)", value: "EEDC" },
+  { label: "Port Harcourt Electricity Distribution (PHED)", value: "PHED" },
+  { label: "Kano Electricity Distribution (KEDCO)", value: "KEDCO" },
+  { label: "Kaduna Electric (KAEDCO)", value: "KAEDCO" },
+  { label: "Jos Electricity Distribution (JEDC)", value: "JEDC" },
+  { label: "Benin Electricity Distribution (BEDC)", value: "BEDC" },
+  { label: "Yola Electricity Distribution (YEDC)", value: "YEDC" },
+  { label: "Aba Power Limited (APL)", value: "APL" },
+] as const;

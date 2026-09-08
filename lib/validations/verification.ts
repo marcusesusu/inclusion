@@ -1,3 +1,4 @@
+import { NIGERIAN_DISCOS } from "@/settings";
 import { z } from "zod";
 
 export const bvnSchema = z.object({
@@ -36,6 +37,11 @@ export const bvnAccountMatchSchema = z.object({
 
 export const passportSchema = z.object({
   passport_number: z.string().min(6, "Passport number is required"),
+  nin: z
+    .string()
+    .min(11, "NIN must be 11 digits")
+    .max(11, "NIN must be 11 digits")
+    .regex(/^\d+$/, "NIN must contain only numbers"),
   first_name: z.string().min(1, "First name is required"),
   last_name: z.string().min(1, "Last name is required"),
   date_of_birth: z.string().min(1, "Date of birth is required"),
@@ -59,8 +65,9 @@ export const nationalIdSchema = z.object({
 });
 
 export const utilityBillSchema = z.object({
-  customer_id: z.string().min(3, "Customer ID is required"),
-  provider: z.string().min(2, "Provider is required"),
+  customer_id: z.string().min(3, "Meter number or Account ID is required"),
+  provider: z.string().min(1, "Please select an electricity provider"),
+  meter_type: z.string().min(1, "Please select a meter type"),
 });
 
 export const cacSchema = z.object({
