@@ -46,13 +46,7 @@ export const NAV_ITEMS: NavItem[] = [
     href: "/dashboard/wallets",
     icon: CircleDollarSign,
     allowedRoles: ["superadmin", "admin"],
-  },
-  {
-    label: "Settings",
-    href: "/dashboard/settings",
-    icon: Settings,
-    allowedRoles: ["superadmin", "admin"],
-  },
+  }, 
 ];
 
 export const NIGERIAN_DISCOS = [
