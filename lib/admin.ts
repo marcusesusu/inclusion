@@ -27,6 +27,7 @@ export interface CreateStaffPayload {
   phone_number?: string;
   role: string;
   cooperative_id?: number;
+  allowed_checkers?: string[]; // Array of TabType strings
 }
 
 export interface UpdateUserPayload {
@@ -34,6 +35,7 @@ export interface UpdateUserPayload {
   last_name?: string;
   phone_number?: string;
   role?: string;
+  allowed_checkers?: string[]; // Array of TabType strings
 }
 
 export const adminApi = {
